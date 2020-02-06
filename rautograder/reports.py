@@ -18,6 +18,7 @@ def make_reports(week, reports_dir='reports'):
    # get all submissions for this week
     db = Database()
     submissions = [ p for p in db.assignment_db.find({'week':week})]
+    print(f'found {len(submissions)} submissions')
     for submission in submissions:
         make_report(submission, week, reports_dir)
 
@@ -35,54 +36,63 @@ def make_report(submission, week, reports_dir):
         f.write('Week %d pset grading report for %s\n' %
             (week, submission['sunet']))
 
-        if submission['knitted']: 
+        if submission.get('knitted', False): 
             f.write('File knitted successfully\n')
         else:
             f.write('Problem knitting file\n')
-        if submission['sourced']: 
+
+        if submission.get('sourced', False): 
             f.write('R code processed successfully\n')
         else:
             f.write('Problem processing R code\n')
-        if submission['rendered']: 
+
+        if submission.get('rendered', False): 
             f.write('RMarkdown rendered successfully\n')
         else:
             f.write('Problem rendering RMarkdown file\n')
 
-        if submission['extra_deductions'] > 0:
+        if submission.get('extra_deductions', 0) > 0:
             f.write('Extra deduction for manual fixes: %d points\n' %
                 submission['extra_deductions'])
 
-        if len(submission['missing_vars']) > 0:
-            f.write('The following variables were missing:\n')
-            for v in submission['missing_vars']:
-                f.write(v + '\n')
+        if isinstance(submission.get('missing_vars', None), list):
+            if len(submission['missing_vars']) > 0:
+                f.write('The following variables were missing:\n')
+                for v in submission['missing_vars']:
+                    f.write(v + '\n')
 
-        if len(submission['size_errors']) > 0:
-            f.write('The following variables were incorrectly sized:\n')
-            for v in submission['size_errors']:
-                f.write(v + '\n')
+        if isinstance(submission.get('missing_vars', None), list):
+            if len(submission['size_errors']) > 0:
+                f.write('The following variables were incorrectly sized:\n')
+                for v in submission['size_errors']:
+                    f.write(v + '\n')
 
-        if len(submission['value_errors']) > 0:
-            f.write('The following variables had incorrect values:\n')
-            for v in submission['value_errors']:
-                f.write(v + '\n')
+        if isinstance(submission.get('value_errors', None), list):
+            if len(submission['value_errors']) > 0:
+                f.write('The following variables had incorrect values:\n')
+                for v in submission['value_errors']:
+                    f.write(v + '\n')
 
-        if len(submission['df_missing_vars']) > 0:
-            f.write('The following data frames had missing variables:\n')
-            for v in submission['df_missing_vars']:
-                f.write(v + '\n')
+        if isinstance(submission.get('df_missing_vars', None), list):
+            if len(submission['df_missing_vars']) > 0:
+                f.write('The following data frames had missing variables:\n')
+                for v in submission['df_missing_vars']:
+                    f.write(v + '\n')
 
-        if len(submission['df_shape_error']) > 0:
-            f.write('The following data frames were incorrectly sized:\n')
-            for v in submission['df_shape_error']:
-                f.write(v + '\n')
+        if isinstance(submission.get('df_shape_error', None), list):
+            if len(submission['df_shape_error']) > 0:
+                f.write('The following data frames were incorrectly sized:\n')
+                for v in submission['df_shape_error']:
+                    f.write(v + '\n')
 
-        if len(submission['df_value_errors']) > 0:
-            f.write('The following data frames had incorrect values:\n')
-            for v in submission['df_value_errors']:
-                f.write(v + '\n')
+        if isinstance(submission.get('df_value_errors', None), list):
+            if len(submission['df_value_errors']) > 0:
+                f.write('The following data frames had incorrect values:\n')
+                for v in submission['df_value_errors']:
+                    f.write(v + '\n')
 
-        f.write('Total score: %0.1f points' % submission['total_score'])
+        if submission.get('total_score', None) is not None:
+            f.write('Total score: %0.1f points' % submission['total_score'])
 
 def make_summary_file(week):
     db = Database()
