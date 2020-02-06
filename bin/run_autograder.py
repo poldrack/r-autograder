@@ -34,14 +34,17 @@ if __name__ == '__main__':
 
     # get list of student Rmd files from specified submissions directory
     submission_files = get_submission_files(args.submission_dir)
-    submission_files = ['../data/submissions/dfVarError.Rmd']
     # for each submission:
+    failures = []
     for submission_file in submission_files:
+        try:
+            submission = process_submission(submission_file, master_submission,args.week)
+            make_report(submission)
+        except: # I KNOW THIS IS BAD!
+            failures.append(submission_file)
 
-        submission = process_submission(submission_file, master_submission,args.week)
-        make_report(submission)
-
-
+    print('Failed processing:')
+    print(failures)
     # generate report for each student
 
     # generate overall summary of grades
