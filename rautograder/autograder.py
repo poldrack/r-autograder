@@ -19,6 +19,7 @@ def get_args():
                         help='submissions directory')
     parser.add_argument('-w', '--week',
                         required=True,
+                        type=int,
                         help='week number')
     parser.add_argument('-m', '--master_file',
                         help='master file for pset',
