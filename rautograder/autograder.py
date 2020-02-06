@@ -7,8 +7,8 @@ import argparse
 from pymongo.errors import ServerSelectionTimeoutError
 from pymongo import MongoClient
 
-from Submission import Submission
-from reports import make_report
+from .Submission import Submission
+from .reports import make_report
 
 def get_args():
     # parse arguments

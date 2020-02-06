@@ -16,7 +16,7 @@ import rpy2
 from rpy2.robjects.packages import importr
 import rpy2.robjects as robjects 
 from rpy2.robjects import pandas2ri
-from Database import Database
+from . Database import Database
 
 class Submission:
     def __init__(self,

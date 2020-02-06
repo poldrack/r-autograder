@@ -11,8 +11,8 @@ import collections
 from pymongo.errors import ServerSelectionTimeoutError
 from pymongo import MongoClient
 
-from Submission import Submission
-from Database import Database
+from .Submission import Submission
+from .Database import Database
 
 def make_reports(week, reports_dir='reports'):
    # get all submissions for this week
