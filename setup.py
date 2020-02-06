@@ -56,7 +56,7 @@ if __name__ == "__main__":
         version=VERSION,
         url=URL,
         download_url=DOWNLOAD_URL,
-        packages=['rautograder'],
+        packages=setuptools.find_packages(),
         scripts=['bin/run_autograder.py'],
         classifiers=[
                      'Intended Audience :: Science/Research',
