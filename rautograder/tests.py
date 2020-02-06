@@ -3,10 +3,10 @@ tests using included data files
 to check for specific errors
 """
 import pytest
-from Submission import Submission
-from autograder import process_submission
-from reports import make_report, make_summary_file
-from Database import Database
+from .Submission import Submission
+from .autograder import process_submission
+from .reports import make_report, make_summary_file
+from .Database import Database
 
 WEEK = 0
 
