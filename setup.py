@@ -57,7 +57,8 @@ if __name__ == "__main__":
         url=URL,
         download_url=DOWNLOAD_URL,
         packages=find_packages(),
-        scripts=['bin/run_autograder.py'],
+        scripts=['bin/run_autograder.py',
+            'bin/make_autograder_reports.py'],
         classifiers=[
                      'Intended Audience :: Science/Research',
                      'Programming Language :: Python :: 3.6',
