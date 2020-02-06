@@ -1,0 +1,35 @@
+---
+title: "Week 5 PSet skeleton"
+output: html_notebook
+---
+
+
+This problem set will focus on probability.  Some code is provided (sections marked "PROVIDED CODE"); you should fill in the blanks (denoted as "____") in the sections marked with "FILL IN THE BLANK".   
+You should make sure that you are able to successfully knit this notebook with no errors by clicking the "Knit" button in RStudio.  
+
+### Setup: Sunet ID and name
+
+First specify your sunet ID and name and confirm that they are correct.
+
+```{r sunetID}
+### FILL IN THE BLANK
+### insert your sunet id in the blank - e.g. "russpold"
+
+sunetID <- "master"
+yourName <- "Master submission"
+
+### PROVIDED CODE - DO NOT CHANGE!
+
+paste('please confirm that your sunet ID is:',sunetID)
+paste('please confirm that your name is:',yourName)
+
+```
+
+Test code
+
+```{r}
+myVal <- 1
+myVector <- c(1, 2, 3)
+myDf <- data.frame(myVar1 = myVector, myVar2 = myVector+1)
+```
+
