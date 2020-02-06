@@ -7,7 +7,7 @@
 descr = """Rautograder: automated grading for psych 10"""
 
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
 DISTNAME="rautograder"
 DESCRIPTION=descr
@@ -56,7 +56,7 @@ if __name__ == "__main__":
         version=VERSION,
         url=URL,
         download_url=DOWNLOAD_URL,
-        packages=setuptools.find_packages(),
+        packages=find_packages(),
         scripts=['bin/run_autograder.py'],
         classifiers=[
                      'Intended Audience :: Science/Research',
