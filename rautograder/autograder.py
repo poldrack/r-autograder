@@ -4,6 +4,7 @@ import sys
 import os
 import glob
 import argparse
+import json
 from pymongo.errors import ServerSelectionTimeoutError
 from pymongo import MongoClient
 
@@ -15,16 +16,38 @@ def get_args():
     parser = argparse.ArgumentParser(
         description='Run autograder')
     parser.add_argument('-s', '--submission_dir',
-                        required=True,
                         help='submissions directory')
     parser.add_argument('-w', '--week',
-                        required=True,
                         type=int,
                         help='week number')
     parser.add_argument('-m', '--master_file',
                         help='master file for pset',
                         default='../data/Master.Rmd')
+    parser.add_argument('-t', '--test_mode',
+                        help='test mode',
+                        action='store_true')
+    parser.add_argument('-c', '--config_file',
+                        help='json config',
+                        default='config.json')
+    parser.add_argument('--ignore', nargs='+', 
+                        help='variables to ignore')
     args = parser.parse_args()
+
+    if args.config_file:
+        args = get_args_from_json(args)
+    return(args)
+
+def get_args_from_json(args, config_file='config.json'):
+    # check for additional args in json
+    if not os.path.exists(config_file):
+        print(f'config file {config_file} not present')
+        return(args)
+    print(f"loading config from {config_file}")
+    print('These will override any command line entries')
+    with open(config_file,'r') as f:
+        config = json.load(f)
+    for v in config:
+        setattr(args, v, config[v])
     return(args)
 
 def get_submission_files(submission_dir, suffix='.Rmd'):
@@ -80,6 +103,9 @@ if __name__ == '__main__':
 
     args = get_args()
 
+    if args.test_mode:
+        print('test mode, exiting')
+        sys.exit(0)
     # load complete Pset Rmd 
     master_submission = Submission(args.master_file, args.week)
     # run and save variable values of interest to RData file for grading
