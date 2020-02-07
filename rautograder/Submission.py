@@ -345,20 +345,15 @@ class Submission:
                 self.num_errors += 1
                 msg = f'nonDf size error: {v} {len(student_value)} vs {len(solution_value)}'
                 log_error(msg, self.sunet)
-            else:
-                msg = f'value correct: {v} {student_value} vs {solution_value}'
-                log_error(msg, self.sunet)
-                
+
             elif len(student_value) > 0:
                 if isinstance(student_value[0], numbers.Number):
-                    eq = numpy.allclose(student_value,solution_value)
-                    isError = eq.mean() != 1
+                    isError = not numpy.allclose(student_value,solution_value)
                 else: # other types of vars
                     isError = not numpy.all(student_value == solution_value)
                 if isError:
                     self.value_errors.append(v)
                     self.num_errors += 1
-
                     msg = f'value error: {v} {student_value} vs {solution_value}'
                     log_error(msg, self.sunet)
                 else:
@@ -396,7 +391,16 @@ class Submission:
 
             for v in shared_vars:
                 try:
+                    print(f'checking {v}')
+                    print(student_value[v])
+                    print(solution_value[v])
                     eq = numpy.allclose(student_value[v],solution_value[v])
+
+                    if not eq:
+                        self.df_value_errors[df].append(v)
+                        self.num_errors += 1
+                except TypeError:
+                    eq = numpy.equal(student_value[v],solution_value[v])
                     if eq.mean() != 1:
                         self.df_value_errors[df].append(v)
                         self.num_errors += 1
