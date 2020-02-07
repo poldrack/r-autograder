@@ -14,11 +14,20 @@ from pymongo import MongoClient
 from .Submission import Submission
 from .Database import Database
 
-def make_reports(week, reports_dir='reports'):
+def make_reports(week, sunets = None, reports_dir='reports'):
    # get all submissions for this week
     db = Database()
-    submissions = [ p for p in db.assignment_db.find({'week':week})]
-    print(f'found {len(submissions)} submissions')
+    submissions_all = [ p for p in db.assignment_db.find({'week':week})]
+    if sunets is not None:
+        assert isinstance(sunets, list)
+        # restrict to sunets of interest
+        submissions = []
+        for s in submissions_all:
+            if s['sunet'] in sunets:
+                submissions.append(s)
+    else:
+        submissions = submissions_all
+    print(f'found {len(submissions)} matching submissions')
     for submission in submissions:
         make_report(submission, week, reports_dir)
 
@@ -85,11 +94,12 @@ def make_report(submission, week, reports_dir):
                 for v in submission['df_shape_error']:
                     f.write(v + '\n')
 
-        if isinstance(submission.get('df_value_errors', None), list):
+        if isinstance(submission.get('df_value_errors', None), dict):
             if len(submission['df_value_errors']) > 0:
                 f.write('The following data frames had incorrect values:\n')
                 for v in submission['df_value_errors']:
-                    f.write(v + '\n')
+                    for k in submission['df_value_errors'][v]:
+                        f.write('%s:%s\n' % (v, k))
 
         if submission.get('total_score', None) is not None:
             f.write('Total score: %0.1f points' % submission['total_score'])
