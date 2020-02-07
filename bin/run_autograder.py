@@ -25,6 +25,11 @@ if __name__ == '__main__':
 
     args = get_args()
 
+    if args.test_mode:
+        print('Test mode:')
+        print('Args:', args)
+        sys.exit(0)
+
     # load complete Pset Rmd 
     master_submission = Submission(args.master_file, args.week)
     # run and save variable values of interest to RData file for grading
