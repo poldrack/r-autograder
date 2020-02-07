@@ -333,6 +333,9 @@ class Submission:
         self.size_errors = []
         self.value_errors = []
         for v in non_df_variables:
+            # skip missing vars
+            if v in self.missing_vars:
+                continue
             if verbose:
                 print(v)
             student_value = numpy.array(robjects.r("studentData$%s" % v))
