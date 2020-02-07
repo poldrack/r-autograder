@@ -25,14 +25,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if os.path.exists(args.config_file):
-        print(f"loading config from {config_file}")
+        print(f"loading config from {args.config_file}")
 
-        with open(config_file,'r') as f:
+        with open(args.config_file,'r') as f:
             config = json.load(f)
         for v in config:
             setattr(args, v, config[v])
     
     print('Clearing database for week %d' % args.week)
     db = Database()
-    
+
     db.clean_assignment_db(args.week)
