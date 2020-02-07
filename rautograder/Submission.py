@@ -214,6 +214,7 @@ class Submission:
 
         base = importr('base')
         r = robjects.r
+        r('rm(list=ls())')
         assert os.path.exists(self.knitted_R_file)
         try:
             r.source(self.knitted_R_file)
@@ -279,10 +280,10 @@ class Submission:
 
         # load student and master values from rdata files
         rcode = '''
+        rm(list=ls())
         solutionData = new.env()
         load('%s',envir = solutionData)
         solutionVars = ls(envir = solutionData)
-
         studentData = new.env()
         load('%s',envir = studentData)
         studentVars = ls(envir = studentData)
@@ -335,18 +336,30 @@ class Submission:
             if verbose:
                 print(v)
             student_value = numpy.array(robjects.r("studentData$%s" % v))
-            self.student_data[v] = student_value.tolist()
             solution_value = numpy.array(robjects.r("solutionData$%s" % v))
             if verbose:
                 print(v, ':', student_value)
                 print(v, ':', solution_value)
+
+            # check for bad variable (no length)
+            try:
+                len(student_value)
+            except TypeError:
+                # self.size_errors.append(v)
+                # self.num_errors += 1
+                # msg = f'nonDf bad variable error: {v} {student_value}'
+                # log_error(msg, self.sunet)
+                # fix variable here, will be a size error below
+                student_value = []
+               
             if len(student_value) != len(solution_value):
+                # will catch zero length
                 self.size_errors.append(v)
                 self.num_errors += 1
                 msg = f'nonDf size error: {v} {len(student_value)} vs {len(solution_value)}'
                 log_error(msg, self.sunet)
-
-            elif len(student_value) > 0:
+            else:
+                # catch other errors
                 if isinstance(student_value[0], numbers.Number):
                     isError = not numpy.allclose(student_value,solution_value)
                 else: # other types of vars
@@ -359,6 +372,11 @@ class Submission:
                 else:
                     msg = f'value correct: {v} {student_value} vs {solution_value}'
                     log_error(msg, self.sunet)
+            # move this down to save fixed versions
+            if isinstance(student_value, list):
+                self.student_data[v] = student_value
+            else:
+                self.student_data[v] = student_value.tolist()
                    
 
 
@@ -416,6 +434,7 @@ class Submission:
         self.total_score = self.max_score - self.extra_deductions - self.num_errors*self.deduction_per_error   
         if self.rendered is None:
             self.total_score -= self.render_deduction
+        self.total_score = numpy.min(self.total_score, 0)
         print('Total score:', self.total_score)
   
     def get_vars_to_save(self):
