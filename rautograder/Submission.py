@@ -13,11 +13,27 @@ import shutil
 import numpy
 import collections
 import rpy2
+import numbers
 from rpy2.robjects.packages import importr
 import rpy2.robjects as robjects 
 from rpy2.robjects import pandas2ri
 from . Database import Database
 
+def write_error(student, solution, sunet, error_dir='errors'):
+    msg = ''
+    write_error(msg, sunet, error_dir)
+
+def log_error(msg, sunet, error_dir='errors'):
+    if not os.path.exists(error_dir):
+        os.mkdir(error_dir)
+    error_file = os.path.join(
+        error_dir,
+        '%s.txt' % sunet
+    )
+    with open(error_file, 'a') as f:
+        f.write(msg + '\n')
+    print(msg)
+    
 class Submission:
     def __init__(self,
                 filename,
@@ -239,6 +255,8 @@ class Submission:
     def compare_data(
         self, 
         master_rdata,
+        verbose=False,
+        error_dir='errors',
         ignore_vars = [
                 'solutionData',
                 'studentData',
@@ -254,8 +272,10 @@ class Submission:
             return
         
         if self.added_ignore_vars is not None:
+            print('adding ignored vars:', self.added_ignore_vars)
             assert isinstance(self.added_ignore_vars, list)
-            ignore_vars = ignore_vars + self.added_ignore_vars
+            for v in self.added_ignore_vars:
+                ignore_vars.append(v)
 
         # load student and master values from rdata files
         rcode = '''
@@ -276,17 +296,24 @@ class Submission:
 
         # remove ignored variables from solution list
         for v in ignore_vars:
+            if verbose:
+                print("ignoring", v)
             if v in solution_list:
                 solution_list.remove(v)
+            if v in student_list:
+                student_list.remove(v)
 
         # classify variables as dataframe vs not
         data_frames = []
         non_df_variables = []
         for v in solution_list:
-            if list(robjects.r('is.data.frame(%s)' % v))[0]:
+            if list(robjects.r('is.data.frame(solutionData$%s)' % v))[0]:
                 data_frames.append(v)
+                print('found data frame:', v)
             else:
                 non_df_variables.append(v)
+                print('found regular variable:', v)
+               
 
         # check for missing variables in submission
         self.num_errors = 0
@@ -295,6 +322,7 @@ class Submission:
             if s not in student_list:
                 self.missing_vars.append(s)
                 self.num_errors += 1
+                log_error('missing variable: %s' % s, self.sunet)
 
         print('Missing:', self.missing_vars)
 
@@ -304,18 +332,39 @@ class Submission:
         self.size_errors = []
         self.value_errors = []
         for v in non_df_variables:
+            if verbose:
+                print(v)
             student_value = numpy.array(robjects.r("studentData$%s" % v))
             self.student_data[v] = student_value.tolist()
             solution_value = numpy.array(robjects.r("solutionData$%s" % v))
+            if verbose:
+                print(v, ':', student_value)
+                print(v, ':', solution_value)
             if len(student_value) != len(solution_value):
                 self.size_errors.append(v)
                 self.num_errors += 1
+                msg = f'nonDf size error: {v} {len(student_value)} vs {len(solution_value)}'
+                log_error(msg, self.sunet)
             else:
-                eq = numpy.equal(student_value,solution_value)
-                if eq.sum() < eq.shape[0]:
+                msg = f'value correct: {v} {student_value} vs {solution_value}'
+                log_error(msg, self.sunet)
+                
+            elif len(student_value) > 0:
+                if isinstance(student_value[0], numbers.Number):
+                    eq = numpy.allclose(student_value,solution_value)
+                    isError = eq.mean() != 1
+                else: # other types of vars
+                    isError = not numpy.all(student_value == solution_value)
+                if isError:
                     self.value_errors.append(v)
                     self.num_errors += 1
-                    print(v, student_value, solution_value)
+
+                    msg = f'value error: {v} {student_value} vs {solution_value}'
+                    log_error(msg, self.sunet)
+                else:
+                    msg = f'value correct: {v} {student_value} vs {solution_value}'
+                    log_error(msg, self.sunet)
+                   
 
 
         # test data frames for missing vars, shape errors, and value errors
@@ -347,7 +396,7 @@ class Submission:
 
             for v in shared_vars:
                 try:
-                    eq = numpy.equal(student_value[v],solution_value[v])
+                    eq = numpy.allclose(student_value[v],solution_value[v])
                     if eq.mean() != 1:
                         self.df_value_errors[df].append(v)
                         self.num_errors += 1
