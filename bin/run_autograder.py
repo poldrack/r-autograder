@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import shutil
 import os
 import glob
 import argparse
@@ -48,10 +49,12 @@ if __name__ == '__main__':
         except: # I KNOW THIS IS BAD!
             failures.append(submission_file)
 
-    print('Failed processing:')
-    print(failures)
-    # generate report for each student
+    print('Failed processing on %d submissions' % len(failures))
+    if not os.path.exists('submissions_broken'):
+        os.mkdir('submissions_broken')
+    for file in failures:
+        shutil.copy(file, 'submissions_broken')
 
-    # generate overall summary of grades
-
+    
+    
 
