@@ -145,7 +145,9 @@ class Submission:
         replacements = {
             'View(':'#View(',
             'view(':'#view(',
-            'install.packages':'#install.packages'}
+            'install.packages':'#install.packages',
+            'devtools::install': '#devtools::install'}
+
         if replace_dict is not None:
             for d in replace_dict:
                 replacements[d] = replace_dict[d]
