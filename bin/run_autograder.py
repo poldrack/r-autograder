@@ -10,7 +10,7 @@ from pymongo import MongoClient
 
 from rautograder.Database import Database
 from rautograder.Submission import Submission
-from rautograder.reports import make_report
+from rautograder.reports import make_report, make_summary_file
 from rautograder.autograder import get_args, get_submission_files, process_submission
 
 
@@ -59,13 +59,6 @@ if __name__ == '__main__':
 
     print('Failed processing on %d submissions' % len(failures))
     for f in failures:
-        print(f, failures[f])
-
-    if not os.path.exists('submissions_broken'):
-        os.mkdir('submissions_broken')
-    for file in failures:
-        shutil.copy(file, 'submissions_broken')
-
-    
+        print(f, failures[f])    
     
 
