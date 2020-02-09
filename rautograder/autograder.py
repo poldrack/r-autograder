@@ -23,6 +23,9 @@ def get_args():
     parser.add_argument('-m', '--master_file',
                         help='master file for pset',
                         default='../data/Master.Rmd')
+    parser.add_argument('-d', '--output_dir',
+                        help='output dir for results',
+                        default='./')
     parser.add_argument('-t', '--test_mode',
                         help='test mode',
                         action='store_true')
@@ -56,13 +59,14 @@ def get_submission_files(submission_dir, suffix='.Rmd'):
     ))
     return(files)
 
-def process_submission(submission_file, master_submission, week):
+def process_submission(submission_file, master_submission, week, output_dir):
     # load the submission
     print(f'loading {submission_file}')
 
     submission = Submission(
         submission_file, 
-        week)
+        week,
+        output_dir = output_dir)
     print('Extra deductions:',submission.extra_deductions)
 
     # knit the Rmd file, generating an R file, record if failed
@@ -107,7 +111,7 @@ if __name__ == '__main__':
         print('test mode, exiting')
         sys.exit(0)
     # load complete Pset Rmd 
-    master_submission = Submission(args.master_file, args.week)
+    master_submission = Submission(args.master_file, args.week, output_dir = args.output_dir)
     # run and save variable values of interest to RData file for grading
     master_submission.knit_rmd_file()
     # source master, save file to master_Rdata
@@ -119,7 +123,7 @@ if __name__ == '__main__':
     # for each submission:
     for submission_file in submission_files:
 
-        submission = process_submission(submission_file, master_submission,args.week)
+        submission = process_submission(submission_file,master_submission,args.week, output_dir = args.output_dir)
         make_report(submission)
 
 
