@@ -19,11 +19,11 @@ import rpy2.robjects as robjects
 from rpy2.robjects import pandas2ri
 from . Database import Database
 
-def write_error(student, solution, sunet, error_dir='errors'):
+def write_error(student, solution, sunet, error_dir):
     msg = ''
     write_error(msg, sunet, error_dir)
 
-def log_error(msg, sunet, error_dir='errors'):
+def log_error(msg, sunet, error_dir):
     if not os.path.exists(error_dir):
         os.mkdir(error_dir)
     error_file = os.path.join(
@@ -146,7 +146,7 @@ class Submission:
             
     def cleanup_submission(self,
                            replace_dict=None,
-                           clean_dir = 'submissions_clean'):
+                           clean_dirname = 'submissions_clean'):
         """
         comment out problematic commands
         - add additional ones with replace_dict
@@ -167,13 +167,16 @@ class Submission:
             for r in replacements:
                 cl = cl.replace(r,replacements[r])
             self.lines_clean.append(cl)
+
         # write cleaned file
+        clean_dir = os.path.join(self.output_dir, clean_dirname)
+        if not os.path.exists(clean_dir):
+            os.mkdir(clean_dir)
+
         self.cleaned_file = os.path.join(
             clean_dir,
             '%s.Rmd' % self.sunet
         )
-        if not os.path.exists(clean_dir):
-            os.mkdir(clean_dir)
 
         with open(self.cleaned_file, 'w') as f:
             for l in self.lines_clean:
@@ -189,12 +192,14 @@ class Submission:
             if l.find(deduction_marker)> -1:
                 self.extra_deductions += 1
 
-    def knit_rmd_file(self, output_dir = 'knit_Rfiles'):
+    def knit_rmd_file(self, knitted_dirname = 'knit_Rfiles'):
 
-        if not os.path.exists(output_dir):
-            os.mkdir(output_dir)
+        knitted_dir = os.path.join(self.output_dir, knitted_dirname)
+   
+        if not os.path.exists(knitted_dir):
+            os.mkdir(knitted_dir)
         outfile = os.path.join(
-            output_dir,
+            knitted_dir,
             '%s.R' % self.sunet
         )
         assert outfile != self.cleaned_file
@@ -213,7 +218,9 @@ class Submission:
         else:
             self.knitted_R_file = outfile
 
-    def source_r_file(self, rdata_path='rdata_files'):
+    def source_r_file(self, rdata_dirname='rdata_files'):
+
+        rdata_path = os.path.join(self.output_dir, rdata_dirname)
 
         if not os.path.exists(rdata_path):
             os.mkdir(rdata_path)
@@ -236,8 +243,10 @@ class Submission:
         if self.sourced:
             self.rdata_file = outfile
 
-    def render_r_file(self, render_dir = 'rendered_html'):
-        # 
+    def render_r_file(self, render_dirname = 'rendered_html'):
+        
+        render_dir = os.path.join(self.output_dir, render_dirname)
+
         if not os.path.isabs(render_dir):
             render_dir = os.path.abspath(render_dir)
 
@@ -268,7 +277,7 @@ class Submission:
         self, 
         master_rdata,
         verbose=False,
-        error_dir='errors',
+        error_dirname='errors',
         ignore_vars = [
                 'solutionData',
                 'studentData',
@@ -278,6 +287,8 @@ class Submission:
         """
         compare student values to master
         """
+
+        error_dir = os.path.join(self.output_dir, error_dirname)
 
         if self.rdata_file is None:
             print('no R data, returning without comparison')
@@ -334,7 +345,10 @@ class Submission:
             if s not in student_list:
                 self.missing_vars.append(s)
                 self.num_errors += 1
-                log_error('missing variable: %s' % s, self.sunet)
+                log_error(
+                    'missing variable: %s' % s,
+                    self.sunet,
+                    error_dir)
 
         print('Missing:', self.missing_vars)
 
@@ -371,7 +385,7 @@ class Submission:
                 self.size_errors.append(v)
                 self.num_errors += 1
                 msg = f'nonDf size error: {v} {len(student_value)} vs {len(solution_value)}'
-                log_error(msg, self.sunet)
+                log_error(msg, self.sunet, error_dir)
             else:
                 # catch other errors
                 if isinstance(student_value[0], numbers.Number):
@@ -382,10 +396,10 @@ class Submission:
                     self.value_errors.append(v)
                     self.num_errors += 1
                     msg = f'value error: {v} {student_value} vs {solution_value}'
-                    log_error(msg, self.sunet)
+                    log_error(msg, self.sunet, error_dir)
                 else:
                     msg = f'value correct: {v} {student_value} vs {solution_value}'
-                    log_error(msg, self.sunet)
+                    log_error(msg, self.sunet, error_dir)
             # move this down to save fixed versions
             if isinstance(student_value, list):
                 self.student_data[v] = student_value
