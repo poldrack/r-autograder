@@ -12,7 +12,7 @@ WEEK = 0
 
 @pytest.fixture(scope="session")
 def master():
-    master = Submission('../data/Master.Rmd', WEEK)
+    master = Submission('data/Master.Rmd', WEEK)
     # run and save variable values of interest to RData file for grading
     master.knit_rmd_file()
     # source master, save file to master_Rdata
@@ -31,7 +31,7 @@ def test_clean():
 
 def test_master(master):
     submission = process_submission(
-        '../data/submissions/Master.Rmd',
+        'data/submissions/Master.Rmd',
         master,
         WEEK
     )
@@ -40,7 +40,7 @@ def test_master(master):
 
 def test_dfSizeError(master):
     submission = process_submission(
-        '../data/submissions/dfSizeError.Rmd',
+        'data/submissions/dfSizeError.Rmd',
         master,
         WEEK
     )
@@ -49,7 +49,7 @@ def test_dfSizeError(master):
 
 def test_dfValueError(master):
     submission = process_submission(
-        '../data/submissions/dfValueError.Rmd',
+        'data/submissions/dfValueError.Rmd',
         master,
         WEEK
     )
@@ -58,7 +58,7 @@ def test_dfValueError(master):
 
 def test_dfVarError(master):
     submission = process_submission(
-        '../data/submissions/dfVarError.Rmd',
+        'data/submissions/dfVarError.Rmd',
         master,
         WEEK
     )
@@ -67,7 +67,7 @@ def test_dfVarError(master):
 
 def test_ManualFix(master):
     submission = process_submission(
-        '../data/submissions/manualFix.Rmd',
+        'data/submissions/manualFix.Rmd',
         master,
         WEEK
     )
@@ -76,7 +76,7 @@ def test_ManualFix(master):
 
 def test_MarkdownError(master):
     submission = process_submission(
-        '../data/submissions/markdownError.Rmd',
+        'data/submissions/markdownError.Rmd',
         master,
         WEEK
     )
@@ -85,7 +85,7 @@ def test_MarkdownError(master):
 
 def test_sizeError(master):
     submission = process_submission(
-        '../data/submissions/sizeError.Rmd',
+        'data/submissions/sizeError.Rmd',
         master,
         WEEK
     )
@@ -94,7 +94,7 @@ def test_sizeError(master):
 
 def test_twoValueErrors(master):
     submission = process_submission(
-        '../data/submissions/twoValueErrors.Rmd',
+        'data/submissions/twoValueErrors.Rmd',
         master,
         WEEK
     )
@@ -103,7 +103,7 @@ def test_twoValueErrors(master):
 
 def test_ValueError(master):
     submission = process_submission(
-        '../data/submissions/ValueError.Rmd',
+        'data/submissions/ValueError.Rmd',
         master,
         WEEK
     )
