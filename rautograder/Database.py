@@ -8,7 +8,7 @@ from pymongo import MongoClient
 
 class Database:
     def __init__(self, 
-                 student_file='../data/student_info.csv',
+                 student_file=None,
                  verbose=False):
         self.verbose = verbose
         self.get_client()
@@ -16,10 +16,10 @@ class Database:
         self.students_db = self.classroom_db.students
         self.assignment_db = self.classroom_db.assignment
 
-        self.load_student_info(student_file)
-
-
-        #self.client_collections = self.client.collection_names()
+        if student_file is not None:
+            self.load_student_info(student_file)
+        else:
+            print('no student file available')
 
     def clean_assignment_db(self, week):
         myquery = {"week": week}
