@@ -15,6 +15,7 @@ class Database:
         self.classroom_db = self.client.autograder_classroom
         self.students_db = self.classroom_db.students
         self.assignment_db = self.classroom_db.assignment
+        self.student_file = student_file
 
         if student_file is not None:
             self.load_student_info(student_file)
