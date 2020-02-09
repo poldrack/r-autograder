@@ -1,5 +1,3 @@
-## Notes for refactor: Feb 2020
-
 import sys
 import os
 import glob
@@ -11,8 +9,11 @@ from pymongo import MongoClient
 from .Submission import Submission
 from .reports import make_report
 
+
 def get_args():
-    # parse arguments
+    """
+    parse arguments
+    """
     parser = argparse.ArgumentParser(
         description='Run autograder')
     parser.add_argument('-s', '--submission_dir',
@@ -32,13 +33,14 @@ def get_args():
     parser.add_argument('-c', '--config_file',
                         help='json config',
                         default='config.json')
-    parser.add_argument('--ignore', nargs='+', 
+    parser.add_argument('--ignore', nargs='+',
                         help='variables to ignore')
     args = parser.parse_args()
 
     if args.config_file:
         args = get_args_from_json(args)
     return(args)
+
 
 def get_args_from_json(args, config_file='config.json'):
     # check for additional args in json
@@ -47,11 +49,12 @@ def get_args_from_json(args, config_file='config.json'):
         return(args)
     print(f"loading config from {config_file}")
     print('These will override any command line entries')
-    with open(config_file,'r') as f:
+    with open(config_file, 'r') as f:
         config = json.load(f)
     for v in config:
         setattr(args, v, config[v])
     return(args)
+
 
 def get_submission_files(submission_dir, suffix='.Rmd'):
     files = glob.glob(os.path.join(
@@ -59,32 +62,28 @@ def get_submission_files(submission_dir, suffix='.Rmd'):
     ))
     return(files)
 
+
 def process_submission(submission_file, master_submission, week, output_dir):
     # load the submission
     print(f'loading {submission_file}')
 
     submission = Submission(
-        submission_file, 
+        submission_file,
         week,
-        output_dir = output_dir)
-    print('Extra deductions:',submission.extra_deductions)
+        output_dir=output_dir)
+    print('Extra deductions:', submission.extra_deductions)
 
     # knit the Rmd file, generating an R file, record if failed
     submission.knit_rmd_file()
-    print('Knitted:',submission.knitted)
+    print('Knitted:', submission.knitted)
 
     # source the resulting R file and save Rdata, record failure
     submission.source_r_file()
-    print('Sourced:',submission.sourced)
-
-    # check for existence of all variables of interest
-    # compare student's values to completed values
-
-    # make sure required packages were loaded
+    print('Sourced:', submission.sourced)
 
     # render the Rmd file to html
     submission.render_r_file()
-    print('Rendered:',submission.rendered)
+    print('Rendered:', submission.rendered)
 
     submission.compare_data(master_submission.rdata_file)
 
@@ -94,13 +93,14 @@ def process_submission(submission_file, master_submission, week, output_dir):
 
     return submission
 
+
 if __name__ == '__main__':
 
     # start mongodb (or at least make sure it's running)
     try:
         client = MongoClient(serverSelectionTimeoutMS=10)
         # returns exception if mongo is not active
-        client.server_info() 
+        client.server_info()
     except ServerSelectionTimeoutError:
         print('MongoDB is not running')
         sys.exit(0)
@@ -110,8 +110,11 @@ if __name__ == '__main__':
     if args.test_mode:
         print('test mode, exiting')
         sys.exit(0)
-    # load complete Pset Rmd 
-    master_submission = Submission(args.master_file, args.week, output_dir = args.output_dir)
+    # load complete Pset Rmd
+    master_submission = Submission(
+        args.master_file,
+        args.week,
+        output_dir=args.output_dir)
     # run and save variable values of interest to RData file for grading
     master_submission.knit_rmd_file()
     # source master, save file to master_Rdata
@@ -123,12 +126,9 @@ if __name__ == '__main__':
     # for each submission:
     for submission_file in submission_files:
 
-        submission = process_submission(submission_file,master_submission,args.week, output_dir = args.output_dir)
+        submission = process_submission(
+            submission_file,
+            master_submission,
+            args.week,
+            output_dir=args.output_dir)
         make_report(submission)
-
-
-    # generate report for each student
-
-    # generate overall summary of grades
-
-
