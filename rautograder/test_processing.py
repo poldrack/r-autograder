@@ -4,6 +4,8 @@ to check for specific errors
 """
 import pytest
 import shutil
+import os
+
 from .Submission import Submission
 from .autograder import process_submission
 from .reports import make_report, make_summary_file
@@ -15,7 +17,7 @@ TESTDIR = "/tmp/testing"
 
 @pytest.fixture(scope="session")
 def master():
-    shutil.rmtree(TESTDIR)
+    os.mkdir(TESTDIR)
     master = Submission('data/Master.Rmd', WEEK, output_dir = TESTDIR)
     # run and save variable values of interest to RData file for grading
     master.knit_rmd_file()
@@ -24,6 +26,9 @@ def master():
     print('master:',master.rdata_file)
     return(master)
 
+def test_prepare():
+    if os.path.exists(TESTDIR):
+        shutil.rmtree(TESTDIR)
 
 def test_clean():
     # clean out database for Week 0
