@@ -14,7 +14,11 @@ from pymongo import MongoClient
 from .Submission import Submission
 from .Database import Database
 
-def make_reports(week, sunets = None, reports_dir='reports'):
+def make_reports(
+    week,
+    sunets = None,
+    reports_dirname='reports',
+    output_dir='./'):
    # get all submissions for this week
     db = Database()
     submissions_all = [ p for p in db.assignment_db.find({'week':week})]
@@ -29,10 +33,11 @@ def make_reports(week, sunets = None, reports_dir='reports'):
         submissions = submissions_all
     print(f'found {len(submissions)} matching submissions')
     for submission in submissions:
-        make_report(submission, week, reports_dir)
+        make_report(submission, week, reports_dirname)
 
-def make_report(submission, week, reports_dir):
+def make_report(submission, week, reports_dirname, output_dir):
 
+    reports_dir = os.path.join(output_dir, reports_dirname)
     if not os.path.exists(reports_dir):
         os.mkdir(reports_dir)
     report_file = os.path.join(
@@ -104,9 +109,9 @@ def make_report(submission, week, reports_dir):
         if submission.get('total_score', None) is not None:
             f.write('Total score: %0.1f points' % submission['total_score'])
 
-def make_summary_file(week):
+def make_summary_file(week, output_dir):
     db = Database()
-    outfile = f'SummaryDataWeek{week}.csv'
+    outfile = os.path.join(output_dir, f'SummaryDataWeek{week}.csv')
     submissions = [ p for p in db.assignment_db.find({'week':week})]
 
     vars_to_save = ['sunet',
