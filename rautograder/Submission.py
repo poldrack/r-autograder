@@ -119,10 +119,6 @@ class Submission:
 
             print('using %s for %s' % (self.sunet, self.filename))
 
-        if self.db.student_file is None:
-            # no student db available
-            return()
-
         # check whether it's in the list - if not, try to replace
         if self.sunet not in [i['sunet'] for i in self.db.get_all_students()]:
             if isinstance(self.sunet, str):
