@@ -38,6 +38,7 @@ class Submission:
     def __init__(self,
                 filename,
                 week,
+                output_dir='./',
                 max_score=10,
                 deduction_per_error=0.5,
                 render_deduction=1,
@@ -52,6 +53,10 @@ class Submission:
         self.max_score = max_score
         self.deduction_per_error = deduction_per_error
         self.render_deduction = render_deduction
+        self.output_dir = output_dir
+        if not os.path.exists(self.output_dir):
+            os.mkdir(self.output_dir)
+
         # data variables
         self.lines = None
         self.lines_clean = None
@@ -111,6 +116,10 @@ class Submission:
             self.sunet = 'unknown_%s'%''.join(random.choices(string.ascii_letters + string.digits, k=6))
 
             print('using %s for %s'%(self.sunet,self.filename))
+        
+        if self.db.student_file is None:
+            # no student db available
+            return()
 
         # check whether it's in the list - if not, try to replace
         if not self.sunet in [i['sunet'] for i in self.db.get_all_students()]:
