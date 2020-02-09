@@ -2,26 +2,22 @@
 reporting functions
 """
 
-import sys
 import os
-import glob
-import argparse
 import pandas
 import collections
-from pymongo.errors import ServerSelectionTimeoutError
-from pymongo import MongoClient
 
-from .Submission import Submission
 from .Database import Database
 
+
 def make_reports(
-    week,
-    sunets = None,
-    reports_dirname='reports',
-    output_dir='./'):
-   # get all submissions for this week
+        week,
+        sunets=None,
+        reports_dirname='reports',
+        output_dir='./'):
+    # get all submissions for this week
     db = Database()
-    submissions_all = [ p for p in db.assignment_db.find({'week':week})]
+    submissions_all = [p for p in db.assignment_db.find(
+        {'week': week})]
     if sunets is not None:
         assert isinstance(sunets, list)
         # restrict to sunets of interest
@@ -34,6 +30,7 @@ def make_reports(
     print(f'found {len(submissions)} matching submissions')
     for submission in submissions:
         make_report(submission, week, reports_dirname)
+
 
 def make_report(submission, week, reports_dirname, output_dir):
 
@@ -48,26 +45,26 @@ def make_report(submission, week, reports_dirname, output_dir):
     # write the report
     with open(report_file, 'w') as f:
         f.write('Week %d pset grading report for %s\n' %
-            (week, submission['sunet']))
+                (week, submission['sunet']))
 
-        if submission.get('knitted', False): 
+        if submission.get('knitted', False):
             f.write('File knitted successfully\n')
         else:
             f.write('Problem knitting file\n')
 
-        if submission.get('sourced', False): 
+        if submission.get('sourced', False):
             f.write('R code processed successfully\n')
         else:
             f.write('Problem processing R code\n')
 
-        if submission.get('rendered', False): 
+        if submission.get('rendered', False):
             f.write('RMarkdown rendered successfully\n')
         else:
             f.write('Problem rendering RMarkdown file\n')
 
         if submission.get('extra_deductions', 0) > 0:
             f.write('Extra deduction for manual fixes: %d points\n' %
-                submission['extra_deductions'])
+                    submission['extra_deductions'])
 
         if isinstance(submission.get('missing_vars', None), list):
             if len(submission['missing_vars']) > 0:
@@ -109,10 +106,14 @@ def make_report(submission, week, reports_dirname, output_dir):
         if submission.get('total_score', None) is not None:
             f.write('Total score: %0.1f points' % submission['total_score'])
 
+
 def make_summary_file(week, output_dir):
     db = Database()
-    outfile = os.path.join(output_dir, f'SummaryDataWeek{week}.csv')
-    submissions = [ p for p in db.assignment_db.find({'week':week})]
+    outfile = os.path.join(
+        output_dir,
+        f'SummaryDataWeek{week}.csv')
+    submissions = [p for p in db.assignment_db.find(
+        {'week': week})]
 
     vars_to_save = ['sunet',
                     'rendered',
@@ -129,7 +130,8 @@ def make_summary_file(week, output_dir):
             data_to_save[v] = submission[v]
         summaryDf.loc[i] = data_to_save
     summaryDf.to_csv(outfile, index=False)
-   
+
+
 if __name__ == '__main__':
     make_reports(0)
     make_summary_file(0)
