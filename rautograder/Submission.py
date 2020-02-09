@@ -12,16 +12,17 @@ import os
 import shutil
 import numpy
 import collections
-import rpy2
 import numbers
 from rpy2.robjects.packages import importr
-import rpy2.robjects as robjects 
+import rpy2.robjects as robjects
 from rpy2.robjects import pandas2ri
 from . Database import Database
+
 
 def write_error(student, solution, sunet, error_dir):
     msg = ''
     write_error(msg, sunet, error_dir)
+
 
 def log_error(msg, sunet, error_dir):
     if not os.path.exists(error_dir):
@@ -33,17 +34,18 @@ def log_error(msg, sunet, error_dir):
     with open(error_file, 'a') as f:
         f.write(msg + '\n')
     print(msg)
-    
+
+
 class Submission:
     def __init__(self,
-                filename,
-                week,
-                output_dir='./',
-                max_score=10,
-                deduction_per_error=0.5,
-                render_deduction=1,
-                added_ignore_vars=None,
-                verbose=False):
+                 filename,
+                 week,
+                 output_dir='./',
+                 max_score=10,
+                 deduction_per_error=0.5,
+                 render_deduction=1,
+                 added_ignore_vars=None,
+                 verbose=False):
 
         self.filename = filename
         self.week = week
@@ -90,13 +92,12 @@ class Submission:
         self.cleanup_submission()
         self.get_extra_deductions()
 
-
-    def load_submission(self,filename,replace_dict=None):
+    def load_submission(self, filename, replace_dict=None):
         """
         load the submission file
         """
         if self.verbose:
-            print('loading %s'%self.filename)
+            print('loading %s' % self.filename)
         self.lines = [i.strip() for i in open(filename).readlines()]
 
     def get_sunet(self):
@@ -106,23 +107,24 @@ class Submission:
         sunet_line = None
         for l in self.lines:
             if l.find('sunetID <-') > -1:
-                sunet_line = l.replace("'",'').replace('"','')
+                sunet_line = l.replace("'", '').replace('"', '')
                 break
         if sunet_line is not None:
-            self.sunet = sunet_line.split(' ')[2].replace('_','')
+            self.sunet = sunet_line.split(' ')[2].replace('_', '')
         else:
             self.sunet = []
         if len(self.sunet) == 0:
-            self.sunet = 'unknown_%s'%''.join(random.choices(string.ascii_letters + string.digits, k=6))
+            self.sunet = 'unknown_%s' % ''.join(
+                random.choices(string.ascii_letters + string.digits, k=6))
 
-            print('using %s for %s'%(self.sunet,self.filename))
-        
+            print('using %s for %s' % (self.sunet, self.filename))
+
         if self.db.student_file is None:
             # no student db available
             return()
 
         # check whether it's in the list - if not, try to replace
-        if not self.sunet in [i['sunet'] for i in self.db.get_all_students()]:
+        if self.sunet not in [i['sunet'] for i in self.db.get_all_students()]:
             if isinstance(self.sunet, str):
                 # add to list
                 student_dict = {
@@ -130,31 +132,31 @@ class Submission:
                     'email': 'Unknown',
                     'name': 'Unknown',
                     'id': None}
-                result = self.db.students_db.insert_one(student_dict)
+                _ = self.db.students_db.insert_one(student_dict)
                 print(f'added {self.sunet} to students database')
-               
+
             # try to replace id with sunet
             elif isinstance(self.sunet, (int, float)):
                 try:
                     i = int(self.sunet)
                     self.sunet = self.db.get_student_by_id(i)['sunet']
-                    print('replaced with',self.sunet)
-                except (ValueError,KeyError) as e:
-                    print('cannot convert',e)
+                    print('replaced with', self.sunet)
+                except (ValueError, KeyError) as e:
+                    print('cannot convert', e)
             else:
                 raise ValueError('bad sunet ID value')
-            
+
     def cleanup_submission(self,
                            replace_dict=None,
-                           clean_dirname = 'submissions_clean'):
+                           clean_dirname='submissions_clean'):
         """
         comment out problematic commands
         - add additional ones with replace_dict
         """
         replacements = {
-            'View(':'#View(',
-            'view(':'#view(',
-            'install.packages':'#install.packages',
+            'View(': '#View(',
+            'view(': '#view(',
+            'install.packages': '#install.packages',
             'devtools::install': '#devtools::install'}
 
         if replace_dict is not None:
@@ -165,7 +167,7 @@ class Submission:
         for l in self.lines:
             cl = l
             for r in replacements:
-                cl = cl.replace(r,replacements[r])
+                cl = cl.replace(r, replacements[r])
             self.lines_clean.append(cl)
 
         # write cleaned file
@@ -189,13 +191,13 @@ class Submission:
         """
         self.extra_deductions = 0
         for l in self.lines:
-            if l.find(deduction_marker)> -1:
+            if l.find(deduction_marker) > -1:
                 self.extra_deductions += 1
 
-    def knit_rmd_file(self, knitted_dirname = 'knit_Rfiles'):
+    def knit_rmd_file(self, knitted_dirname='knit_Rfiles'):
 
         knitted_dir = os.path.join(self.output_dir, knitted_dirname)
-   
+
         if not os.path.exists(knitted_dir):
             os.mkdir(knitted_dir)
         outfile = os.path.join(
@@ -237,14 +239,14 @@ class Submission:
         try:
             r.source(self.knitted_R_file)
             base.save_image(outfile)
-        except: # need to use blank except here
+        except: # need to use blank except here # noqa
             print('problem sourcing R file')
         self.sourced = os.path.exists(outfile)
         if self.sourced:
             self.rdata_file = outfile
 
-    def render_r_file(self, render_dirname = 'rendered_html'):
-        
+    def render_r_file(self, render_dirname='rendered_html'):
+
         render_dir = os.path.join(self.output_dir, render_dirname)
 
         if not os.path.isabs(render_dir):
@@ -253,7 +255,6 @@ class Submission:
         if not os.path.exists(render_dir):
             os.mkdir(render_dir)
 
-        r = robjects.r
         rmarkdown = importr('rmarkdown')
         outfile = os.path.join(
             render_dir,
@@ -261,9 +262,9 @@ class Submission:
         )
         print(outfile)
         try:
-            rmarkdown.render(self.cleaned_file, 
-                         output_file = outfile)
-        except:
+            rmarkdown.render(self.cleaned_file,
+                             output_file=outfile)
+        except:  # noqa
             print('problem rendering rmarkdown')
 
         if not os.path.exists(outfile):
@@ -272,13 +273,12 @@ class Submission:
             self.rendered = True
             self.rendered_html_file = outfile
 
-
     def compare_data(
-        self, 
+        self,
         master_rdata,
         verbose=False,
         error_dirname='errors',
-        ignore_vars = [
+        ignore_vars=[
                 'solutionData',
                 'studentData',
                 'sunetID',
@@ -293,7 +293,7 @@ class Submission:
         if self.rdata_file is None:
             print('no R data, returning without comparison')
             return
-        
+
         if self.added_ignore_vars is not None:
             print('adding ignored vars:', self.added_ignore_vars)
             assert isinstance(self.added_ignore_vars, list)
@@ -336,7 +336,6 @@ class Submission:
             else:
                 non_df_variables.append(v)
                 print('found regular variable:', v)
-               
 
         # check for missing variables in submission
         self.num_errors = 0
@@ -379,34 +378,37 @@ class Submission:
                 # log_error(msg, self.sunet)
                 # fix variable here, will be a size error below
                 student_value = []
-               
+
             if len(student_value) != len(solution_value):
                 # will catch zero length
                 self.size_errors.append(v)
                 self.num_errors += 1
-                msg = f'nonDf size error: {v} {len(student_value)} vs {len(solution_value)}'
+                msg = f'nonDf size error: {v} ' +\
+                    '{len(student_value)} vs {len(solution_value)}'
                 log_error(msg, self.sunet, error_dir)
             else:
                 # catch other errors
                 if isinstance(student_value[0], numbers.Number):
-                    isError = not numpy.allclose(student_value,solution_value)
-                else: # other types of vars
+                    isError = not numpy.allclose(
+                        student_value,
+                        solution_value)
+                else:  # other types of vars
                     isError = not numpy.all(student_value == solution_value)
                 if isError:
                     self.value_errors.append(v)
                     self.num_errors += 1
-                    msg = f'value error: {v} {student_value} vs {solution_value}'
+                    msg = f'value error: {v}' +\
+                        '{student_value} vs {solution_value}'
                     log_error(msg, self.sunet, error_dir)
                 else:
-                    msg = f'value correct: {v} {student_value} vs {solution_value}'
+                    msg = f'value correct: {v}' +\
+                        '{student_value} vs {solution_value}'
                     log_error(msg, self.sunet, error_dir)
             # move this down to save fixed versions
             if isinstance(student_value, list):
                 self.student_data[v] = student_value
             else:
                 self.student_data[v] = student_value.tolist()
-                   
-
 
         # test data frames for missing vars, shape errors, and value errors
         self.df_missing_vars = collections.defaultdict(list)
@@ -419,9 +421,11 @@ class Submission:
                 continue
 
             # convert to pandas data frames
-            student_value = pandas2ri.rpy2py_dataframe(robjects.r("studentData$%s" % df))
+            student_value = pandas2ri.rpy2py_dataframe(
+                robjects.r("studentData$%s" % df))
             self.student_data[v] = student_value.to_json()
-            solution_value = pandas2ri.rpy2py_dataframe(robjects.r("solutionData$%s" % df))
+            solution_value = pandas2ri.rpy2py_dataframe(
+                robjects.r("solutionData$%s" % df))
 
             # check for length
             if student_value.shape[0] != solution_value.shape[0]:
@@ -429,8 +433,10 @@ class Submission:
                 self.num_errors += 1
 
             # check for same variables
-            shared_vars = set(student_value.columns).intersection(solution_value.columns)
-            diff = set(solution_value.columns).difference(student_value.columns)
+            shared_vars = set(student_value.columns).intersection(
+                solution_value.columns)
+            diff = set(solution_value.columns).difference(
+                student_value.columns)
             if len(diff) > 0:
                 self.df_missing_vars[df] = list(diff)
                 self.num_errors += 1
@@ -440,13 +446,15 @@ class Submission:
                     print(f'checking {v}')
                     print(student_value[v])
                     print(solution_value[v])
-                    eq = numpy.allclose(student_value[v],solution_value[v])
+                    eq = numpy.allclose(
+                        student_value[v], solution_value[v])
 
                     if not eq:
                         self.df_value_errors[df].append(v)
                         self.num_errors += 1
                 except TypeError:
-                    eq = numpy.equal(student_value[v],solution_value[v])
+                    eq = numpy.equal(
+                        student_value[v], solution_value[v])
                     if eq.mean() != 1:
                         self.df_value_errors[df].append(v)
                         self.num_errors += 1
@@ -459,12 +467,14 @@ class Submission:
                         self.df_value_errors[df].append(v)
                         self.num_errors += 1
 
-        self.total_score = self.max_score - self.extra_deductions - self.num_errors*self.deduction_per_error   
+        self.total_score = self.max_score -\
+            self.extra_deductions -\
+            self.num_errors*self.deduction_per_error
         if self.rendered is None:
             self.total_score -= self.render_deduction
         self.total_score = numpy.min(self.total_score, 0)
         print('Total score:', self.total_score)
-  
+
     def get_vars_to_save(self):
         v = vars(self).copy()
         print(v)
@@ -472,11 +482,12 @@ class Submission:
         return v
 
     def save_assignment_to_db(self, v):
-        sunet_matches = [i for i in self.db.assignment_db.find({'sunet':self.sunet})]
+        sunet_matches = [i for i in self.db.assignment_db.find(
+            {'sunet': self.sunet})]
         if len(sunet_matches) == 0:
-            print("inserting",self.sunet)
+            print("inserting", self.sunet)
             return(self.db.assignment_db.insert_one(v))
         else:
-            print("updating",self.sunet)
-            return(self.db.assignment_db.update_one({'sunet':self.sunet},{'$set':v}))
-
+            print("updating", self.sunet)
+            return(self.db.assignment_db.update_one(
+                {'sunet': self.sunet}, {'$set': v}))
