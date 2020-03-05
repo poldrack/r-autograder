@@ -24,7 +24,7 @@ def write_error(student, solution, sunet, error_dir):
     write_error(msg, sunet, error_dir)
 
 
-def log_error(msg, sunet, error_dir):
+def log_error(msg, sunet, error_dir, print_error=True):
     if not os.path.exists(error_dir):
         os.mkdir(error_dir)
     error_file = os.path.join(
@@ -33,7 +33,8 @@ def log_error(msg, sunet, error_dir):
     )
     with open(error_file, 'a') as f:
         f.write(msg + '\n')
-    print(msg)
+    if print_error:
+        print(msg)
 
 
 class Submission:
@@ -44,15 +45,23 @@ class Submission:
                  max_score=10,
                  deduction_per_error=0.5,
                  render_deduction=1,
+                 extra_deduction_size=1,
                  added_ignore_vars=None,
+                 ignore_sign_vars=None,
                  verbose=False):
 
         self.filename = filename
         self.week = week
         self.db = Database()
         self.added_ignore_vars = added_ignore_vars
+        if ignore_sign_vars is not None:
+            self.ignore_sign_vars = ignore_sign_vars
+        else:
+            self.ignore_sign_vars = []
+
         self.verbose = verbose
         self.max_score = max_score
+        self.extra_deduction_size=extra_deduction_size
         self.deduction_per_error = deduction_per_error
         self.render_deduction = render_deduction
         self.output_dir = output_dir
@@ -188,7 +197,7 @@ class Submission:
         self.extra_deductions = 0
         for l in self.lines:
             if l.find(deduction_marker) > -1:
-                self.extra_deductions += 1
+                self.extra_deductions += self.extra_deduction_size
 
     def knit_rmd_file(self, knitted_dirname='knit_Rfiles'):
 
@@ -344,14 +353,14 @@ class Submission:
                     'missing variable: %s' % s,
                     self.sunet,
                     error_dir)
-
-        print('Missing:', self.missing_vars)
+        if len(self.missing_vars) > 0:
+            print('Missing:', self.missing_vars)
 
         self.student_data = collections.defaultdict(None)
 
         # test non-data frame variables for size/value errors
-        self.size_errors = []
-        self.value_errors = []
+        self.size_errors = {}
+        self.value_errors = {}
         for v in non_df_variables:
             # skip missing vars
             if v in self.missing_vars:
@@ -377,29 +386,35 @@ class Submission:
 
             if len(student_value) != len(solution_value):
                 # will catch zero length
-                self.size_errors.append(v)
+                self.size_errors[v] = (len(student_value), len(solution_value))
                 self.num_errors += 1
                 msg = f'nonDf size error: {v} ' +\
-                    '{len(student_value)} vs {len(solution_value)}'
+                    f'{len(student_value)} vs {len(solution_value)}'
                 log_error(msg, self.sunet, error_dir)
             else:
                 # catch other errors
                 if isinstance(student_value[0], numbers.Number):
-                    isError = not numpy.allclose(
-                        student_value,
-                        solution_value)
+                    if v in self.ignore_sign_vars:
+                        print('ignoring sign for', v)
+                        isError = not numpy.allclose(
+                            numpy.abs(student_value),
+                            numpy.abs(solution_value))
+                    else:
+                        isError = not numpy.allclose(
+                            student_value,
+                            solution_value)
                 else:  # other types of vars
                     isError = not numpy.all(student_value == solution_value)
                 if isError:
-                    self.value_errors.append(v)
+                    self.value_errors[v] = (student_value.tolist(), solution_value.tolist())
                     self.num_errors += 1
-                    msg = f'value error: {v}' +\
-                        '{student_value} vs {solution_value}'
+                    msg = f'nonDf value error: {v}' +\
+                        f'{student_value} vs {solution_value}'
                     log_error(msg, self.sunet, error_dir)
                 else:
-                    msg = f'value correct: {v}' +\
-                        '{student_value} vs {solution_value}'
-                    log_error(msg, self.sunet, error_dir)
+                    msg = f'nonDf value correct: {v}' +\
+                        f'{student_value} vs {solution_value}'
+                    log_error(msg, self.sunet, error_dir, print_error=False)
             # move this down to save fixed versions
             if isinstance(student_value, list):
                 self.student_data[v] = student_value
@@ -408,8 +423,8 @@ class Submission:
 
         # test data frames for missing vars, shape errors, and value errors
         self.df_missing_vars = collections.defaultdict(list)
-        self.df_shape_error = []
-        self.df_value_errors = collections.defaultdict(list)
+        self.df_shape_error = {}
+        self.df_value_errors = collections.defaultdict(dict)
 
         for df in data_frames:
             # first check existence of variable in student space
@@ -425,8 +440,11 @@ class Submission:
 
             # check for length
             if student_value.shape[0] != solution_value.shape[0]:
-                self.df_shape_error.append(df)
+                self.df_shape_error[df] = (student_value.shape[0], solution_value.shape[0])
+                msg = f'df shape error: {df}, {self.df_shape_error[df]}'
+                log_error(msg, self.sunet, error_dir, print_error=False)
                 self.num_errors += 1
+                continue
 
             # check for same variables
             shared_vars = set(student_value.columns).intersection(
@@ -435,24 +453,30 @@ class Submission:
                 student_value.columns)
             if len(diff) > 0:
                 self.df_missing_vars[df] = list(diff)
+                msg = f'df missing variable error: {df}, {self.df_missing_vars[df]}'
+                log_error(msg, self.sunet, error_dir, print_error=False)
                 self.num_errors += 1
 
             for v in shared_vars:
+                print(f'checking {v}')
                 try:
-                    print(f'checking {v}')
-                    print(student_value[v])
-                    print(solution_value[v])
                     eq = numpy.allclose(
                         student_value[v], solution_value[v])
 
                     if not eq:
-                        self.df_value_errors[df].append(v)
+                        self.df_value_errors[df][v] = (student_value[v].to_json(), solution_value[v].to_json())
+                        msg = f'Df value error: {v}' +\
+                            f'{student_value[v]} vs {solution_value[v]}'
+                        log_error(msg, self.sunet, error_dir, print_error=False)
                         self.num_errors += 1
                 except TypeError:
                     eq = numpy.equal(
                         student_value[v], solution_value[v])
                     if eq.mean() != 1:
-                        self.df_value_errors[df].append(v)
+                        self.df_value_errors[df][v] = (student_value[v].to_json(), solution_value[v].to_json())
+                        msg = f'Df type error: {v}' +\
+                            f'{student_value[v]} vs {solution_value[v]}'
+                        log_error(msg, self.sunet, error_dir, print_error=False)
                         self.num_errors += 1
                 except ValueError:
                     print(f'problem comparing {v} in {df}')
@@ -460,7 +484,10 @@ class Submission:
                     # which should have been caught above
                     # if not, then store it here
                     if df not in self.df_shape_error:
-                        self.df_value_errors[df].append(v)
+                        self.df_value_errors[df][v] = (student_value[v].to_json(), solution_value[v].to_json())
+                        msg = f'Df value error: {v}' +\
+                            f'{student_value[v]} vs {solution_value[v]}'
+                        log_error(msg, self.sunet, error_dir, print_error=False)
                         self.num_errors += 1
 
         self.total_score = self.max_score -\
@@ -468,12 +495,12 @@ class Submission:
             self.num_errors*self.deduction_per_error
         if self.rendered is None:
             self.total_score -= self.render_deduction
-        self.total_score = numpy.min(self.total_score, 0)
+        self.total_score = numpy.max(self.total_score, 0)
         print('Total score:', self.total_score)
 
     def get_vars_to_save(self):
         v = vars(self).copy()
-        print(v)
+        #print(v)
         del v['db']
         return v
 
