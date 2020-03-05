@@ -18,9 +18,15 @@ def get_args():
         description='Run autograder')
     parser.add_argument('-s', '--submission_dir',
                         help='submissions directory')
+    parser.add_argument('-f', '--submission_file',
+                        help='single submission file to analyze')
     parser.add_argument('-w', '--week',
                         type=int,
                         help='week number')
+    parser.add_argument('-e', '--extra_deduction',
+                        type=float,
+                        default=1.0,
+                        help='deduction for manual fixes')
     parser.add_argument('-m', '--master_file',
                         help='master file for pset',
                         default='../data/Master.Rmd')
@@ -34,6 +40,8 @@ def get_args():
                         help='json config',
                         default='config.json')
     parser.add_argument('--ignore', nargs='+',
+                        help='variables to ignore')
+    parser.add_argument('--ignore_sign_vars', nargs='+',
                         help='variables to ignore')
     args = parser.parse_args()
 
@@ -63,14 +71,25 @@ def get_submission_files(submission_dir, suffix='.Rmd'):
     return(files)
 
 
-def process_submission(submission_file, master_submission, week, output_dir):
+def process_submission(
+    submission_file,
+    master_submission,
+    week,
+    output_dir,
+    added_ignore_vars=None,
+    extra_deduction_size=1,
+    ignore_sign_vars=None):
     # load the submission
     print(f'loading {submission_file}')
 
     submission = Submission(
         submission_file,
         week,
-        output_dir=output_dir)
+        output_dir=output_dir,
+        added_ignore_vars=added_ignore_vars,
+        extra_deduction_size=extra_deduction_size,
+        ignore_sign_vars=ignore_sign_vars)
+    
     print('Extra deductions:', submission.extra_deductions)
 
     # knit the Rmd file, generating an R file, record if failed
