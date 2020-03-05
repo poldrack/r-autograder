@@ -60,6 +60,7 @@ if __name__ == "__main__":
         scripts=['bin/run_autograder.py',
             'bin/clean_assignment_db.py',
             'bin/make_autograder_reports.py',
+	    'bin/send_reports.py',
             'bin/process_failures.py'],
         classifiers=[
                      'Intended Audience :: Science/Research',
