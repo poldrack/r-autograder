@@ -30,23 +30,41 @@ if __name__ == '__main__':
     if args.test_mode:
         print('Test mode:')
         print('Args:', args)
-        sys.exit(0)
 
     db = Database()
-    # load complete Pset Rmd 
-    master_submission = Submission(args.master_file, args.week)
-    # run and save variable values of interest to RData file for grading
-    master_submission.knit_rmd_file()
-    # source master, save file to master_Rdata
-    master_submission.source_r_file(rdata_path='master_Rdata')
+
+    if not args.test_mode:
+        # load complete Pset Rmd 
+        master_submission = Submission(
+            args.master_file,
+            args.week,
+            added_ignore_vars=args.ignore)
+        # run and save variable values of interest to RData file for grading
+        master_submission.knit_rmd_file()
+        # source master, save file to master_Rdata
+        master_submission.source_r_file(rdata_dirname='master_Rdata')
 
     # get list of student Rmd files from specified submissions directory
-    submission_files = get_submission_files(args.submission_dir)
+    if args.submission_file is not None:
+        submission_files = [args.submission_file]
+        print("processing single file:", args.submission_file)
+    else:
+        submission_files = get_submission_files(args.submission_dir)
     # for each submission:
     failures = {}
     for submission_file in submission_files:
+        print(f'Processing {submission_file}')
+        if args.test_mode:
+            continue
         try:
-            submission = process_submission(submission_file, master_submission,args.week)
+            submission = process_submission(
+                submission_file, 
+                master_submission,
+                args.week,
+                output_dir='./',
+                added_ignore_vars=args.ignore,
+                extra_deduction_size=args.extra_deduction,
+                ignore_sign_vars=args.ignore_sign_vars)
             submission_record = [ p for p in db.assignment_db.find(
                 {'week':args.week, 'sunet':submission.sunet})]
             make_report(submission_record[0], args.week, 'reports')
@@ -55,10 +73,11 @@ if __name__ == '__main__':
             # I at least save the exception so we can look at it later
             failures[submission_file] = e
 
-    make_summary_file(args.week)
+    if not args.test_mode:
+        make_summary_file(args.week)
 
-    print('Failed processing on %d submissions' % len(failures))
-    for f in failures:
-        print(f, failures[f])    
+        print('Failed processing on %d submissions' % len(failures))
+        for f in failures:
+            print(f, failures[f])    
     
 
