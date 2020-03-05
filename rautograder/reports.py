@@ -32,7 +32,7 @@ def make_reports(
         make_report(submission, week, reports_dirname)
 
 
-def make_report(submission, week, reports_dirname, output_dir):
+def make_report(submission, week, reports_dirname, output_dir='./'):
 
     reports_dir = os.path.join(output_dir, reports_dirname)
     if not os.path.exists(reports_dir):
@@ -72,42 +72,44 @@ def make_report(submission, week, reports_dirname, output_dir):
                 for v in submission['missing_vars']:
                     f.write(v + '\n')
 
-        if isinstance(submission.get('missing_vars', None), list):
+        if isinstance(submission.get('missing_vars', None), dict):
             if len(submission['size_errors']) > 0:
                 f.write('The following variables were incorrectly sized:\n')
                 for v in submission['size_errors']:
-                    f.write(v + '\n')
+                    f.write(f'{v}: {submission["size_errors"][v]}' + '\n')
 
-        if isinstance(submission.get('value_errors', None), list):
+        if isinstance(submission.get('value_errors', None), dict):
             if len(submission['value_errors']) > 0:
                 f.write('The following variables had incorrect values:\n')
                 for v in submission['value_errors']:
-                    f.write(v + '\n')
+                    f.write(f'{v}: {submission["value_errors"][v]}' + '\n')
 
-        if isinstance(submission.get('df_missing_vars', None), list):
+        if isinstance(submission.get('df_missing_vars', None), dict):
             if len(submission['df_missing_vars']) > 0:
                 f.write('The following data frames had missing variables:\n')
                 for v in submission['df_missing_vars']:
-                    f.write(v + '\n')
+                    f.write(f'{v}: {submission["df_missing_vars"][v]}' + '\n')
 
-        if isinstance(submission.get('df_shape_error', None), list):
+        if isinstance(submission.get('df_shape_error', None), dict):
             if len(submission['df_shape_error']) > 0:
                 f.write('The following data frames were incorrectly sized:\n')
                 for v in submission['df_shape_error']:
-                    f.write(v + '\n')
+                    f.write(f'{v}: {submission["df_shape_error"][v]}' + '\n')
 
         if isinstance(submission.get('df_value_errors', None), dict):
             if len(submission['df_value_errors']) > 0:
+                print('df_value_errors:')
+                print(submission["df_value_errors"])
                 f.write('The following data frames had incorrect values:\n')
                 for v in submission['df_value_errors']:
                     for k in submission['df_value_errors'][v]:
-                        f.write('%s:%s\n' % (v, k))
+                        f.write(f'{v}:{k}\n')
 
         if submission.get('total_score', None) is not None:
             f.write('Total score: %0.1f points' % submission['total_score'])
 
 
-def make_summary_file(week, output_dir):
+def make_summary_file(week, output_dir='./'):
     db = Database()
     outfile = os.path.join(
         output_dir,
